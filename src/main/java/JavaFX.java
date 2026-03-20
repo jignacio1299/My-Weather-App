@@ -1,18 +1,18 @@
 import javafx.application.Application;
 
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 
-import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.*;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
+import javafx.scene.text.*;
 import javafx.stage.Stage;
 import weather.Period;
 import weather.WeatherAPI;
@@ -20,6 +20,9 @@ import weather.WeatherAPI;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
 
 /* 								-= References =-
 
@@ -30,7 +33,8 @@ import java.util.ArrayList;
  - Group: https://docs.oracle.com/javase/8/javafx/api/javafx/scene/Group.html
  - Text: https://www.tutorialspoint.com/javafx/javafx_text.htm
  - Font List: https://motleybytes.com/w/JavaFxFonts
- - NWS Forecast shortForecasts: https://github.com/ktrue/NWS-forecast/blob/ccdfc4b0acf2598a1d9c5d500267be6362b6e0d5/advforecast2.php#L1747
+ - NWS Short Forecast Lookup Table: https://github.com/ktrue/NWS-forecast/blob/ccdfc4b0acf2598a1d9c5d500267be6362b6e0d5/advforecast2.php#L1747
+ - Rectangle: https://www.tutorialspoint.com/javafx/javafx_drawing_rectangle.htm
 
  */
 
@@ -45,11 +49,7 @@ public class JavaFX extends Application {
 		SNOW
 	}
 
-	HBox TopBox;
-		TextField Date;
-		//Sound Icon
-		//Sound Toggle
-	Rectangle sky; //Need?
+	Rectangle sky;
 	private static final String SunnySkyTop = "#6faede";
 	private static final String SunnySkyBottom = "#205ae3";
 	private static final String CloudySkyTop = "#6faede";
@@ -64,17 +64,9 @@ public class JavaFX extends Application {
 	private static final double SCENEWIDTH = 600;
 	private static final double SCENEHEIGHT = 900;
 
-
-		//Clouds left
-		//Sun
-		//Clouds right
-	HBox Bottom;
-	//Weather
-	//Weather Description
-	//Switch Time
-		//
-	String date, description, temperature, windSpeed, windDirection;
-	Text shortDesc, tempHigh, tempLow, windSpd, windDir;
+	String date, description, windSpeed, windDirection;
+	int temperature;
+	Text shortDesc, tempHigh, windSpd, windDir;
 
 	ImageView sun, sunHalo;
 	ImageView cloud1, cloud2, cloud3, cloud4, cloud5, cloud6, cloud7;
@@ -84,6 +76,21 @@ public class JavaFX extends Application {
 	SkyStatus skyStatus;
 	int day = 0;
 
+	HBox descriptionBox = new HBox();
+
+	VBox temperatureBox = new VBox();
+	ImageView thermometer;
+
+	VBox windBox = new VBox();
+	VBox windDirBox = new VBox();
+	ImageView compass;
+	private static final double compassRadius = 75;
+
+	Line needle;
+	private static final double needleLength = compassRadius * 0.7;
+
+	VBox rainBox = new VBox();
+
 	Group todayObjects = new Group();
 
 	public static void main(String[] args) { launch(args); }
@@ -91,7 +98,7 @@ public class JavaFX extends Application {
 	@Override
 	public void start(Stage primaryStage) throws Exception, FileNotFoundException {
 		primaryStage.getIcons().add(new Image(new FileInputStream("src\\main\\resources\\icon.png")));
-		primaryStage.setTitle("Jarrette's Weather App!");
+		primaryStage.setTitle("Chicago Weather");
 		primaryStage.setResizable(false);
 
 		ArrayList<Period> forecast = WeatherAPI.getForecast("LOT",77,70);
@@ -101,15 +108,12 @@ public class JavaFX extends Application {
 
 		date = forecast.get(day).startTime.toString();
 		description = forecast.get(day).shortForecast;
-		temperature = String.valueOf(forecast.get(day).temperature);
+		temperature = forecast.get(day).temperature;
 		windSpeed = forecast.get(day).windSpeed;
 		windDirection = forecast.get(day).windDirection;
 
-		Date = new TextField(date);
 		sun = makeView(new Image(new FileInputStream("src\\main\\resources\\Sun3.png")),
 									225, 100, 150, 150, 1);
-
-		TopBox = new HBox(Date);
 
 
 
@@ -176,10 +180,10 @@ public class JavaFX extends Application {
 
 	private void makeSky(SkyStatus status) throws FileNotFoundException {
 
-		SkyStatus testStatus = SkyStatus.CLOUDY;
+//		SkyStatus testStatus = SkyStatus.SNOW;
 		// TODO: COMMENT OUT TEST STATUS
-//		switch(status) {
-		switch(testStatus) {
+		switch(status) {
+//		switch(testStatus) {
 			case CLEAR:
 				sky = colorRectangle(SunnySkyTop, SunnySkyBottom);
 				sunHalo = makeView(new Image(new FileInputStream("src\\main\\resources\\SunHalo.png")),
@@ -317,39 +321,231 @@ public class JavaFX extends Application {
 
 	private void makeDescription() {
 		shortDesc = new Text(description);
-		shortDesc.setX(20);
-		shortDesc.setY(400);
 		shortDesc.setFont(Font.font("Tahoma", FontWeight.BOLD, FontPosture.REGULAR, 40));
 		shortDesc.setFill(Color.WHITE);
-		shortDesc.setStrokeWidth(1);
+		shortDesc.setStrokeWidth(1.5);
 		shortDesc.setStroke(Color.DARKGRAY);
+		shortDesc.setTextAlignment(TextAlignment.CENTER);
 
-		todayObjects.getChildren().add(shortDesc);
+		descriptionBox.setLayoutX(0);
+		descriptionBox.setLayoutY(325);
+		descriptionBox.setPrefWidth(600);
+
+		descriptionBox.setSpacing(0);
+		descriptionBox.setAlignment(Pos.CENTER);
+
+		descriptionBox.getChildren().add(shortDesc);
+		todayObjects.getChildren().add(descriptionBox);
+
+//		todayObjects.getChildren().add(shortDesc);
+
 	}
 
-	private void makeStats() {
-		statsContainer = new Rectangle(SCENEWIDTH - 100, SCENEHEIGHT / 2 + 27.5, Color.WHITE);
+	private void makeStats() throws FileNotFoundException {
+		statsContainer = new Rectangle(500, 477.5, Color.WHITE);
 		statsContainer.setX(50);
-		statsContainer.setY(SCENEHEIGHT / 2 - 45);
+		statsContainer.setY(405);
 		statsContainer.setArcHeight(25);
 		statsContainer.setArcWidth(25);
 		statsContainer.setOpacity(0.3);
+
+		makeTemp();
+
+		makeWind();
+
+		rainContainer = new Rectangle(220, (437.5 - 30) / 2 + 5, Color.WHITE);
+		rainContainer.setX(310);
+		rainContainer.setY(425 + (437.5 - 30) / 2 + 5 + 20);
+		rainContainer.setArcWidth(25);
+		rainContainer.setArcHeight(25);
+		rainContainer.setOpacity(0.3);
+
+
 		todayObjects.getChildren().add(statsContainer);
 
-		tempHigh = new Text(temperature);
-		tempHigh.setX(70);
-		tempHigh.setY(515);
+		todayObjects.getChildren().add(tempContainer);
+		todayObjects.getChildren().add(temperatureBox);
 
-		windSpd = new Text(windSpeed);
-		windSpd.setX(300);
-		windSpd.setY(515);
+
+		todayObjects.getChildren().add(rainContainer);
+//		todayObjects.getChildren().add(rainBox);
+	}
+
+	private void makeTemp() throws FileNotFoundException {
+
+		tempContainer = new Rectangle(220, 437.5, Color.WHITE);
+		tempContainer.setX(70);
+		tempContainer.setY(425);
+		tempContainer.setArcHeight(25);
+		tempContainer.setArcWidth(25);
+		tempContainer.setOpacity(0.3);
+
+		tempHigh = new Text(String.valueOf(temperature) + "°F");
+		tempHigh.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 40));
+
+		temperatureBox.setLayoutX(70);
+		temperatureBox.setLayoutY(425);
+		temperatureBox.setPrefSize(220, 437.5);
+		temperatureBox.setAlignment(Pos.TOP_CENTER);
+		temperatureBox.setPadding(new Insets(20));
+
+		temperatureBox.getChildren().add(tempHigh);
+
+		//TODO: GET RID OF OVERRIDE
+
+		if(temperature > 80) {
+			//Hot
+			thermometer = makeView(new Image(new FileInputStream("src\\main\\resources\\thermometer_hot.png")), 0, 0, 375, 180, 1);
+			tempHigh.setStroke(Color.web("#872F18"));
+			tempHigh.setStrokeWidth(2);
+			tempHigh.setFill(Color.web("#B83F1F"));
+		}
+		else if(temperature > 60) {
+			//Warm
+			thermometer = makeView(new Image(new FileInputStream("src\\main\\resources\\thermometer_warm.png")), 0, 0, 375, 180, 1);
+			tempHigh.setStroke(Color.web("#A18213"));
+			tempHigh.setStrokeWidth(2);
+			tempHigh.setFill(Color.web("#EBBD1A"));
+		}
+		else if(temperature > 32) {
+			//Cool
+			thermometer = makeView(new Image(new FileInputStream("src\\main\\resources\\thermometer_cool.png")), 0, 0, 375, 180, 1);
+			tempHigh.setStroke(Color.web("#1389A1"));
+			tempHigh.setStrokeWidth(2);
+			tempHigh.setFill(Color.web("#1CC6E8"));
+		}
+		else {
+			//Freezing
+			thermometer = makeView(new Image(new FileInputStream("src\\main\\resources\\thermometer_freezing.png")), 0, 0, 375, 180, 1);
+			tempHigh.setStroke(Color.web("#1C4CE8"));
+			tempHigh.setStrokeWidth(2);
+			tempHigh.setFill(Color.web("#0F2C87"));
+		}
+		temperatureBox.getChildren().add(thermometer);
+	}
+
+	private void makeWind() throws FileNotFoundException {
+		windContainer = new Rectangle(220, (437.5 - 30) / 2 + 5, Color.WHITE);
+		windContainer.setX(310);
+		windContainer.setY(425);
+		windContainer.setArcWidth(25);
+		windContainer.setArcHeight(25);
+		windContainer.setOpacity(0.3);
+
+		windSpd = new Text("Wind: " + windSpeed);
+		windSpd.setStrokeWidth(1.5);
+		windSpd.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 20));
+		windSpd.setFill(Color.WHITE);
+
+		windBox.setLayoutX(310);
+		windBox.setLayoutY(425);
+		windBox.setPrefSize(220, (437.5 - 30) / 2 + 5);
+		windBox.setAlignment(Pos.TOP_CENTER);
+		windBox.setPadding(new Insets(20));
+
+//		compass stuff
+		compass = makeView(new Image(new FileInputStream("src\\main\\resources\\compass.png")),
+				420 - compassRadius, 425 + 50, compassRadius * 2, compassRadius * 2, 1);
+
+		drawNeedle();
+
+		windBox.getChildren().add(windSpd);
+
+		todayObjects.getChildren().add(windContainer);
+		todayObjects.getChildren().add(windBox);
+		todayObjects.getChildren().add(compass);
+		todayObjects.getChildren().add(needle);
+		todayObjects.getChildren().add(windDirBox);
+
+	}
+
+	private void drawNeedle() {
+
+		final double compassCenterX = compass.getX() + compassRadius;
+		final double compassCenterY = compass.getY() + compassRadius;
+
+		needle = new Line();
+		needle.setFill(Color.RED);
+		needle.setStroke(Color.RED);
+		needle.setStrokeWidth(2);
+
+		needle.setStartX(compassCenterX);
+		needle.setStartY(compassCenterY);
+
+		double angleFactor;
+
+
+		switch (windDirection) {
+			case "E":
+				angleFactor = 0;
+				break;
+			case "ENE":
+				angleFactor = 1;
+				break;
+			case "NE":
+				angleFactor = 2;
+				break;
+			case "NNE":
+				angleFactor = 3;
+				break;
+			case "N":
+				angleFactor = 4;
+				break;
+			case "NNW":
+				angleFactor = 5;
+				break;
+			case "NW":
+				angleFactor = 6;
+				break;
+			case "WNW":
+				angleFactor = 7;
+				break;
+			case "W":
+				angleFactor = 8;
+				break;
+			case "WSW":
+				angleFactor = 9;
+				break;
+			case "SW":
+				angleFactor = 10;
+				break;
+			case "SSW":
+				angleFactor = 11;
+				break;
+			case "S":
+				angleFactor = 12;
+				break;
+			case "SSE":
+				angleFactor = 13;
+				break;
+			case "SE":
+				angleFactor = 14;
+				break;
+			case "ESE":
+				angleFactor = 15;
+				break;
+			default:
+				angleFactor = 0;
+		}
+
+		needle.setEndX(compassCenterX + (needleLength * cos(angleFactor * Math.PI / 8)));
+		needle.setEndY(compassCenterY - (needleLength * sin(angleFactor * Math.PI / 8)));
 
 		windDir = new Text(windDirection);
-		windDir.setX(300);
-		windDir.setY(530);
+		windDir.setStrokeWidth(1.5);
+		windDir.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 20));
+		windDir.setFill(Color.BLUE);
 
-		todayObjects.getChildren().add(tempHigh);
-		todayObjects.getChildren().add(windSpd);
-		todayObjects.getChildren().add(windDir);
+		windDirBox.setLayoutX(compassCenterX - compassRadius);
+		windDirBox.setPrefWidth(compassRadius * 2);
+		windDirBox.setAlignment(Pos.TOP_CENTER);
+		windDirBox.getChildren().add(windDir);
+
+		if(angleFactor > 8) {
+			windDirBox.setLayoutY(compassCenterY - 25);
+		}
+		else {
+			windDirBox.setLayoutY(compassCenterY);
+		}
 	}
 }
