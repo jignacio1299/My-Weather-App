@@ -14,7 +14,6 @@ import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import org.w3c.dom.css.Rect;
 import weather.Period;
 import weather.WeatherAPI;
 
@@ -30,11 +29,22 @@ import java.util.ArrayList;
  - Enums: https://www.w3schools.com/java/java_enums.asp
  - Group: https://docs.oracle.com/javase/8/javafx/api/javafx/scene/Group.html
  - Text: https://www.tutorialspoint.com/javafx/javafx_text.htm
+ - Font List: https://motleybytes.com/w/JavaFxFonts
  - NWS Forecast shortForecasts: https://github.com/ktrue/NWS-forecast/blob/ccdfc4b0acf2598a1d9c5d500267be6362b6e0d5/advforecast2.php#L1747
 
  */
 
 public class JavaFX extends Application {
+
+	private enum SkyStatus {
+		CLEAR,
+		SUNNY,
+		CLOUDY,
+		RAIN,
+		STORM,
+		SNOW
+	}
+
 	HBox TopBox;
 		TextField Date;
 		//Sound Icon
@@ -63,43 +73,41 @@ public class JavaFX extends Application {
 	//Weather Description
 	//Switch Time
 		//
-	String date, description, temperature, windSpd, windDir;
+	String date, description, temperature, windSpeed, windDirection;
+	Text shortDesc, tempHigh, tempLow, windSpd, windDir;
 
 	ImageView sun, sunHalo;
 	ImageView cloud1, cloud2, cloud3, cloud4, cloud5, cloud6, cloud7;
 
-	Text shortDescription;
+	Rectangle statsContainer, tempContainer, windContainer, rainContainer;
 
 	SkyStatus skyStatus;
 	int day = 0;
 
-	Group allObjects = new Group();
+	Group todayObjects = new Group();
 
 	public static void main(String[] args) { launch(args); }
 
 	@Override
 	public void start(Stage primaryStage) throws Exception, FileNotFoundException {
-		primaryStage.setTitle("I'm a professional Weather App!");
+		primaryStage.getIcons().add(new Image(new FileInputStream("src\\main\\resources\\icon.png")));
+		primaryStage.setTitle("Jarrette's Weather App!");
+		primaryStage.setResizable(false);
 
 		ArrayList<Period> forecast = WeatherAPI.getForecast("LOT",77,70);
 		if (forecast == null){
 			throw new RuntimeException("Forecast did not load");
 		}
 
-
-
 		date = forecast.get(day).startTime.toString();
 		description = forecast.get(day).shortForecast;
 		temperature = String.valueOf(forecast.get(day).temperature);
-		windSpd = forecast.get(day).windSpeed;
-		windDir = forecast.get(day).windDirection;
+		windSpeed = forecast.get(day).windSpeed;
+		windDirection = forecast.get(day).windDirection;
 
 		Date = new TextField(date);
 		sun = makeView(new Image(new FileInputStream("src\\main\\resources\\Sun3.png")),
 									225, 100, 150, 150, 1);
-
-
-
 
 		TopBox = new HBox(Date);
 
@@ -112,18 +120,10 @@ public class JavaFX extends Application {
 //		weather.setText(forecast.get(0).shortForecast);
 
 		makeSky(parseDescription(description));
+		makeDescription();
+		makeStats();
 
-		Text shortDesc = new Text(description);
-		shortDesc.setX(20);
-		shortDesc.setY(SCENEHEIGHT / 2);
-		shortDesc.setFont(Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 40));
-		shortDesc.setFill(Color.WHITE);
-		shortDesc.setStrokeWidth(2);
-		shortDesc.setStroke(Color.DARKGRAY);
-
-		allObjects.getChildren().add(shortDesc);
-
-		Scene today = new Scene(allObjects, SCENEWIDTH, SCENEHEIGHT);
+		Scene today = new Scene(todayObjects, SCENEWIDTH, SCENEHEIGHT);
 		primaryStage.setScene(today);
 		primaryStage.show();
 	}
@@ -139,15 +139,6 @@ public class JavaFX extends Application {
 		newView.setOpacity(opacity);
 
 		return newView;
-	}
-
-	private enum SkyStatus {
-		CLEAR,
-		SUNNY,
-		CLOUDY,
-		RAIN,
-		STORM,
-		SNOW
 	}
 
 	private SkyStatus parseDescription(String desc) {
@@ -174,7 +165,7 @@ public class JavaFX extends Application {
 
 	}
 
-	private Rectangle colorSky(String topColor, String bottomColor) {
+	private Rectangle colorRectangle(String topColor, String bottomColor) {
 		Rectangle newSky = new Rectangle(SCENEWIDTH, SCENEHEIGHT);
 		Stop[] stops = new Stop[] { new Stop(0, Color.web(topColor)), new Stop(1, Color.web(bottomColor))};
 		LinearGradient lg1 = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
@@ -182,25 +173,24 @@ public class JavaFX extends Application {
 
 		return newSky;
 	}
+
 	private void makeSky(SkyStatus status) throws FileNotFoundException {
 
-
-
-		SkyStatus testStatus = SkyStatus.SNOW;
+		SkyStatus testStatus = SkyStatus.CLOUDY;
 		// TODO: COMMENT OUT TEST STATUS
 //		switch(status) {
 		switch(testStatus) {
 			case CLEAR:
-				sky = colorSky(SunnySkyTop, SunnySkyBottom);
+				sky = colorRectangle(SunnySkyTop, SunnySkyBottom);
 				sunHalo = makeView(new Image(new FileInputStream("src\\main\\resources\\SunHalo.png")),
 						SCENEWIDTH / 2 - 100, 80, 200, 200, 1);
-				allObjects.getChildren().add(sky);
-				allObjects.getChildren().add(sunHalo);
-				allObjects.getChildren().add(sun);
+				todayObjects.getChildren().add(sky);
+				todayObjects.getChildren().add(sunHalo);
+				todayObjects.getChildren().add(sun);
 				break;
 			case SUNNY:
 
-				sky = colorSky(SunnySkyTop, SunnySkyBottom);
+				sky = colorRectangle(SunnySkyTop, SunnySkyBottom);
 				cloud1 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_1.png")),
 						-50, 150, 300, 300, 0.35);
 				cloud4 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_4.png")),
@@ -208,38 +198,41 @@ public class JavaFX extends Application {
 
 				sunHalo = makeView(new Image(new FileInputStream("src\\main\\resources\\SunHalo.png")),
 						SCENEWIDTH / 2 - 100, 80, 200, 200, 1);
-				allObjects.getChildren().add(sky);
-				allObjects.getChildren().add(sunHalo);
-				allObjects.getChildren().add(sun);
-				allObjects.getChildren().add(cloud1);
-				allObjects.getChildren().add(cloud4);
+				todayObjects.getChildren().add(sky);
+				todayObjects.getChildren().add(sunHalo);
+				todayObjects.getChildren().add(sun);
+				todayObjects.getChildren().add(cloud1);
+				todayObjects.getChildren().add(cloud4);
 
 				break;
 			case CLOUDY:
 
-				sky = colorSky(CloudySkyTop, CloudySkyBottom);
+				sky = colorRectangle(CloudySkyTop, CloudySkyBottom);
+				sunHalo = makeView(new Image(new FileInputStream("src\\main\\resources\\SunHalo.png")),
+						SCENEWIDTH / 2 - 100, 80, 200, 200, 1);
 				cloud1 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_1.png")),
 						-50, 150, 300, 300, 0.95);
 				cloud2 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_2.png")),
-						180, 140, 250, 200, 0.95);
+						180, 140, 250, 200, 0.85);
 				cloud3 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_3.png")),
-						170, 200, 150, 150, 0.95);
+						170, 200, 150, 150, 0.85);
 				cloud4 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_4.png")),
 						370, 150, 350, 350, 0.95);
 				cloud5 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_5.png")),
-						200, 140, 275, 275, 0.95);
+						200, 140, 275, 275, 0.85);
 
-				allObjects.getChildren().add(sky);
-				allObjects.getChildren().add(sun);
-				allObjects.getChildren().add(cloud1);
-				allObjects.getChildren().add(cloud2);
-				allObjects.getChildren().add(cloud3);
-				allObjects.getChildren().add(cloud4);
-				allObjects.getChildren().add(cloud5);
+				todayObjects.getChildren().add(sky);
+				todayObjects.getChildren().add(sunHalo);
+				todayObjects.getChildren().add(sun);
+				todayObjects.getChildren().add(cloud2);
+				todayObjects.getChildren().add(cloud3);
+				todayObjects.getChildren().add(cloud4);
+				todayObjects.getChildren().add(cloud5);
+				todayObjects.getChildren().add(cloud1);
 
 				break;
 			case SNOW:
-				sky = colorSky(SnowSkyTop, SnowSkyBottom);
+				sky = colorRectangle(SnowSkyTop, SnowSkyBottom);
 				cloud1 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_1.png")),
 						-50, 150, 300, 300, 0.85);
 				cloud2 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_2.png")),
@@ -255,18 +248,18 @@ public class JavaFX extends Application {
 				cloud7 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_white_1.png")),
 						320, 120, 250, 250, 0.65);
 
-				allObjects.getChildren().add(sky);
-				allObjects.getChildren().add(cloud6);
-				allObjects.getChildren().add(cloud7);
-				allObjects.getChildren().add(cloud1);
-				allObjects.getChildren().add(cloud2);
-				allObjects.getChildren().add(cloud3);
-				allObjects.getChildren().add(cloud4);
-				allObjects.getChildren().add(cloud5);
+				todayObjects.getChildren().add(sky);
+				todayObjects.getChildren().add(cloud6);
+				todayObjects.getChildren().add(cloud7);
+				todayObjects.getChildren().add(cloud1);
+				todayObjects.getChildren().add(cloud2);
+				todayObjects.getChildren().add(cloud3);
+				todayObjects.getChildren().add(cloud4);
+				todayObjects.getChildren().add(cloud5);
 				break;
 			case RAIN:
 
-				sky = colorSky(RainSkyTop, RainSkyBottom);
+				sky = colorRectangle(RainSkyTop, RainSkyBottom);
 				cloud1 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_gray_1.png")),
 						-50, 150, 300, 300, 0.95);
 				cloud2 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_gray_2.png")),
@@ -282,18 +275,18 @@ public class JavaFX extends Application {
 				cloud7 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_gray_1.png")),
 						320, 120, 250, 250, 0.75);
 
-				allObjects.getChildren().add(sky);
-				allObjects.getChildren().add(cloud6);
-				allObjects.getChildren().add(cloud7);
-				allObjects.getChildren().add(cloud1);
-				allObjects.getChildren().add(cloud2);
-				allObjects.getChildren().add(cloud3);
-				allObjects.getChildren().add(cloud4);
-				allObjects.getChildren().add(cloud5);
+				todayObjects.getChildren().add(sky);
+				todayObjects.getChildren().add(cloud6);
+				todayObjects.getChildren().add(cloud7);
+				todayObjects.getChildren().add(cloud1);
+				todayObjects.getChildren().add(cloud2);
+				todayObjects.getChildren().add(cloud3);
+				todayObjects.getChildren().add(cloud4);
+				todayObjects.getChildren().add(cloud5);
 				break;
 			case STORM:
 
-				sky = colorSky(StormSkyTop, StormSkyBottom);
+				sky = colorRectangle(StormSkyTop, StormSkyBottom);
 				cloud1 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_black_1.png")),
 						-50, 150, 300, 300, 0.95);
 				cloud2 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_black_2.png")),
@@ -309,16 +302,54 @@ public class JavaFX extends Application {
 				cloud7 = makeView(new Image(new FileInputStream("src\\main\\resources\\cloud_black_1.png")),
 						320, 120, 250, 250, 0.75);
 
-				allObjects.getChildren().add(sky);
-				allObjects.getChildren().add(cloud6);
-				allObjects.getChildren().add(cloud7);
-				allObjects.getChildren().add(cloud1);
-				allObjects.getChildren().add(cloud2);
-				allObjects.getChildren().add(cloud3);
-				allObjects.getChildren().add(cloud4);
-				allObjects.getChildren().add(cloud5);
+				todayObjects.getChildren().add(sky);
+				todayObjects.getChildren().add(cloud6);
+				todayObjects.getChildren().add(cloud7);
+				todayObjects.getChildren().add(cloud1);
+				todayObjects.getChildren().add(cloud2);
+				todayObjects.getChildren().add(cloud3);
+				todayObjects.getChildren().add(cloud4);
+				todayObjects.getChildren().add(cloud5);
 				break;
 			default:
 		}
+	}
+
+	private void makeDescription() {
+		shortDesc = new Text(description);
+		shortDesc.setX(20);
+		shortDesc.setY(400);
+		shortDesc.setFont(Font.font("Tahoma", FontWeight.BOLD, FontPosture.REGULAR, 40));
+		shortDesc.setFill(Color.WHITE);
+		shortDesc.setStrokeWidth(1);
+		shortDesc.setStroke(Color.DARKGRAY);
+
+		todayObjects.getChildren().add(shortDesc);
+	}
+
+	private void makeStats() {
+		statsContainer = new Rectangle(SCENEWIDTH - 100, SCENEHEIGHT / 2 + 27.5, Color.WHITE);
+		statsContainer.setX(50);
+		statsContainer.setY(SCENEHEIGHT / 2 - 45);
+		statsContainer.setArcHeight(25);
+		statsContainer.setArcWidth(25);
+		statsContainer.setOpacity(0.3);
+		todayObjects.getChildren().add(statsContainer);
+
+		tempHigh = new Text(temperature);
+		tempHigh.setX(70);
+		tempHigh.setY(515);
+
+		windSpd = new Text(windSpeed);
+		windSpd.setX(300);
+		windSpd.setY(515);
+
+		windDir = new Text(windDirection);
+		windDir.setX(300);
+		windDir.setY(530);
+
+		todayObjects.getChildren().add(tempHigh);
+		todayObjects.getChildren().add(windSpd);
+		todayObjects.getChildren().add(windDir);
 	}
 }
