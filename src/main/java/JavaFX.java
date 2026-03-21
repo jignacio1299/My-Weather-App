@@ -35,6 +35,7 @@ import static java.lang.Math.sin;
  - Font List: https://motleybytes.com/w/JavaFxFonts
  - NWS Short Forecast Lookup Table: https://github.com/ktrue/NWS-forecast/blob/ccdfc4b0acf2598a1d9c5d500267be6362b6e0d5/advforecast2.php#L1747
  - Rectangle: https://www.tutorialspoint.com/javafx/javafx_drawing_rectangle.htm
+ - Line: https://docs.oracle.com/javase/8/javafx/api/javafx/scene/shape/Line.html
 
  */
 
@@ -66,7 +67,7 @@ public class JavaFX extends Application {
 
 	String date, description, windSpeed, windDirection;
 	int temperature;
-	Text shortDesc, tempHigh, windSpd, windDir;
+	Text shortDesc, tempHigh, windSpd, windDir, rainProb;
 
 	ImageView sun, sunHalo;
 	ImageView cloud1, cloud2, cloud3, cloud4, cloud5, cloud6, cloud7;
@@ -90,6 +91,8 @@ public class JavaFX extends Application {
 	private static final double needleLength = compassRadius * 0.7;
 
 	VBox rainBox = new VBox();
+    ImageView rainDrop;
+    int rainChance;
 
 	Group todayObjects = new Group();
 
@@ -111,6 +114,7 @@ public class JavaFX extends Application {
 		temperature = forecast.get(day).temperature;
 		windSpeed = forecast.get(day).windSpeed;
 		windDirection = forecast.get(day).windDirection;
+        rainChance = forecast.get(day).probabilityOfPrecipitation.value;
 
 		sun = makeView(new Image(new FileInputStream("src\\main\\resources\\Sun3.png")),
 									225, 100, 150, 150, 1);
@@ -353,22 +357,15 @@ public class JavaFX extends Application {
 
 		makeWind();
 
-		rainContainer = new Rectangle(220, (437.5 - 30) / 2 + 5, Color.WHITE);
-		rainContainer.setX(310);
-		rainContainer.setY(425 + (437.5 - 30) / 2 + 5 + 20);
-		rainContainer.setArcWidth(25);
-		rainContainer.setArcHeight(25);
-		rainContainer.setOpacity(0.3);
-
+	    makeRain();
 
 		todayObjects.getChildren().add(statsContainer);
 
 		todayObjects.getChildren().add(tempContainer);
 		todayObjects.getChildren().add(temperatureBox);
 
-
 		todayObjects.getChildren().add(rainContainer);
-//		todayObjects.getChildren().add(rainBox);
+		todayObjects.getChildren().add(rainBox);
 	}
 
 	private void makeTemp() throws FileNotFoundException {
@@ -474,7 +471,6 @@ public class JavaFX extends Application {
 
 		double angleFactor;
 
-
 		switch (windDirection) {
 			case "E":
 				angleFactor = 0;
@@ -548,4 +544,46 @@ public class JavaFX extends Application {
 			windDirBox.setLayoutY(compassCenterY);
 		}
 	}
+
+    private void makeRain() throws FileNotFoundException {
+
+        rainContainer = new Rectangle(220, (437.5 - 30) / 2 + 5, Color.WHITE);
+        rainContainer.setX(310);
+        rainContainer.setY(425 + (437.5 - 30) / 2 + 5 + 20);
+        rainContainer.setArcWidth(25);
+        rainContainer.setArcHeight(25);
+        rainContainer.setOpacity(0.3);
+
+        rainBox = new VBox();
+        rainBox.setLayoutX(310);
+        rainBox.setLayoutY(425 + (437.5 - 30) / 2 + 5 + 20);
+        rainBox.setPrefSize(220, (437.5 - 30) / 2 + 5);
+        rainBox.setAlignment(Pos.TOP_CENTER);
+        rainBox.setPadding(new Insets(20));
+
+        if(rainChance > 75) {
+            rainDrop = makeView(new Image(new FileInputStream("src\\main\\resources\\WaterDrop100%.png")),
+                    0, 0, 150, 150, 1);
+        }
+        else if(rainChance > 50) {
+            rainDrop = makeView(new Image(new FileInputStream("src\\main\\resources\\WaterDrop75%.png")),
+                    0, 0, 150, 150, 1);
+        }
+        else if(rainChance > 25) {
+            rainDrop = makeView(new Image(new FileInputStream("src\\main\\resources\\WaterDrop50%.png")),
+                    0, 0, 150, 150, 1);
+        }
+        else {
+            rainDrop = makeView(new Image(new FileInputStream("src\\main\\resources\\WaterDrop25%.png")),
+                    0, 0, 150, 150, 1);
+        }
+
+        rainProb = new Text(rainChance + "% chance of rain");
+        rainProb.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 20));
+        rainProb.setFill(Color.WHITE);
+
+        rainBox.getChildren().add(rainProb);
+        rainBox.getChildren().add(rainDrop);
+
+    }
 }
