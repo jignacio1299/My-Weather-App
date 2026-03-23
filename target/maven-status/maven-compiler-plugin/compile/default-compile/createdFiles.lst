@@ -1,10 +1,10 @@
+weather\Elevation.class
 weather\Period.class
-JavaFX$SkyStatus.class
 weather\ProbabilityOfPrecipitation.class
+weather\Geometry.class
+JavaFX.class
+weather\WeatherAPI.class
 weather\Root.class
 MyWeatherAPI.class
-weather\Elevation.class
-weather\Geometry.class
 weather\Properties.class
-weather\WeatherAPI.class
-JavaFX.class
+JavaFX$SkyStatus.class

@@ -5,10 +5,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.*;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
@@ -36,6 +36,18 @@ import static java.lang.Math.sin;
  - NWS Short Forecast Lookup Table: https://github.com/ktrue/NWS-forecast/blob/ccdfc4b0acf2598a1d9c5d500267be6362b6e0d5/advforecast2.php#L1747
  - Rectangle: https://www.tutorialspoint.com/javafx/javafx_drawing_rectangle.htm
  - Line: https://docs.oracle.com/javase/8/javafx/api/javafx/scene/shape/Line.html
+ - BackgroundImage: https://docs.oracle.com/javase/8/javafx/api/javafx/scene/layout/BackgroundImage.html
+ - BackgroundSize: https://docs.oracle.com/javase/8/javafx/api/javafx/scene/layout/BackgroundSize.html
+ - StackPane: https://www.geeksforgeeks.org/java/javafx-stackpane-class/
+
+ 								-= Resources =-
+ - Sun: https://freepngimg.com/nature/sun
+ - Clouds: https://gallery.yopriceville.com/Free-Clipart-Pictures/Cloud-PNG/Cartoon_Clouds_Set_Transparent_PNG_Clip_Art_Image
+ - Water Drop: https://www.flaticon.com/free-icon/water-drop_5611083
+ - Thermostat: https://www.pinterest.com/pin/65654107055768701/
+ - Compass: https://www.vecteezy.com/vector-art/27512006-magnetic-compass-art-design-for-travel-tourism-exploration-concept-graphic-element-for-navigation-orientation-vector-illustration
+ - Wind: https://favpng.com/download/UANwyahk#google_vignette
+ - Moon: https://favpng.com/download/H48BGtMf
 
  */
 
@@ -64,6 +76,12 @@ public class JavaFX extends Application {
 
 	private static final double SCENEWIDTH = 600;
 	private static final double SCENEHEIGHT = 900;
+
+	ArrayList<Period> forecast;
+
+	// Today's weather scene components
+
+	Scene todayScene;
 
 	String date, description, windSpeed, windDirection;
 	int temperature;
@@ -96,18 +114,47 @@ public class JavaFX extends Application {
 
 	Group todayObjects = new Group();
 
+
+
+
+	Button upButton, downButton;
+	HBox upButtonBox, arrowUpBox;
+	HBox downButtonBox, arrowDownBox;
+	Background upButtonBG, downButtonBG;
+
+	//Forecast Scene components
+
+	Scene forecastScene;
+
+	Group forecastObjects = new Group();
+
+	HBox allContainers;
+	VBox todayBox, tomorrowBox, dayAfterBox;
+
+	Rectangle background;
+	VBox todayContainer, tomorrowContainer, dayAfterContainer;
+	ImageView sun1, sun2, sun3, moon1, moon2, moon3;
+	ImageView wind1, wind2, wind3, rain1, rain2, rain3;
+	Text date1, date2, date3;
+
+
 	public static void main(String[] args) { launch(args); }
 
 	@Override
 	public void start(Stage primaryStage) throws Exception, FileNotFoundException {
+
+		//				-= App Init =-
+
 		primaryStage.getIcons().add(new Image(new FileInputStream("src\\main\\resources\\icon.png")));
 		primaryStage.setTitle("Chicago Weather");
 		primaryStage.setResizable(false);
 
-		ArrayList<Period> forecast = WeatherAPI.getForecast("LOT",77,70);
+		forecast = WeatherAPI.getForecast("LOT",77,70);
 		if (forecast == null){
 			throw new RuntimeException("Forecast did not load");
 		}
+
+		//				-= Today's Weather Scene =-
 
 		date = forecast.get(day).startTime.toString();
 		description = forecast.get(day).shortForecast;
@@ -116,24 +163,29 @@ public class JavaFX extends Application {
 		windDirection = forecast.get(day).windDirection;
         rainChance = forecast.get(day).probabilityOfPrecipitation.value;
 
-		sun = makeView(new Image(new FileInputStream("src\\main\\resources\\Sun3.png")),
+		sun = makeView(new Image(new FileInputStream("src\\main\\resources\\Sun.png")),
 									225, 100, 150, 150, 1);
-
-
-
-//		temperature = new TextField();
-//		weather = new TextField();
-//		int periodNum = 3;
-//		temperature.setText("Today's weather is: " + String.valueOf(forecast.get(periodNum).temperature) + ". start of period: " + forecast.get(periodNum).startTime + " " + forecast.get(periodNum).endTime);
-//		weather.setText(forecast.get(0).shortForecast);
 
 		makeSky(parseDescription(description));
 		makeDescription();
 		makeStats();
+		makeButton1(primaryStage);
 
-		Scene today = new Scene(todayObjects, SCENEWIDTH, SCENEHEIGHT);
-		primaryStage.setScene(today);
+		//				-= Three-Day Forecast Scene =-
+
+		makeBackground();
+		makeBoxes();
+
+
+
+
+		//				-= App Display =-
+
+		todayScene = new Scene(todayObjects, SCENEWIDTH, SCENEHEIGHT);
+		forecastScene = new Scene(forecastObjects, SCENEWIDTH, SCENEHEIGHT);
+		primaryStage.setScene(todayScene);
 		primaryStage.show();
+
 	}
 
 	private ImageView makeView(Image newImage, double X, double Y, double height, double width, double opacity) {
@@ -377,7 +429,7 @@ public class JavaFX extends Application {
 		tempContainer.setArcWidth(25);
 		tempContainer.setOpacity(0.3);
 
-		tempHigh = new Text(String.valueOf(temperature) + "°F");
+		tempHigh = new Text(temperature + "°F");
 		tempHigh.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 40));
 
 		temperatureBox.setLayoutX(70);
@@ -387,8 +439,6 @@ public class JavaFX extends Application {
 		temperatureBox.setPadding(new Insets(20));
 
 		temperatureBox.getChildren().add(tempHigh);
-
-		//TODO: GET RID OF OVERRIDE
 
 		if(temperature > 80) {
 			//Hot
@@ -586,4 +636,173 @@ public class JavaFX extends Application {
         rainBox.getChildren().add(rainDrop);
 
     }
+
+	private void makeButton1(Stage primaryStage) throws FileNotFoundException {
+
+
+		upButton = new Button();
+		upButton.setPrefWidth(70);
+		upButton.setPrefHeight(30);
+		upButton.setOpacity(1);
+
+		upButton.setBackground(new Background(new BackgroundImage(new Image(new FileInputStream("src\\main\\resources\\ArrowDim.png")), null, null, null,
+				new BackgroundSize(100 ,50, true, true, true, true))));
+				// No idea how BackgroundSize works, I just made everything true and it worked
+
+		upButton.setOnAction(e -> {
+
+			primaryStage.setScene(forecastScene);
+			System.out.println("Pressed");
+		});
+
+		upButton.setOnMouseEntered(e -> {
+            try {
+                upButton.setBackground(new Background(new BackgroundImage(new Image(new FileInputStream("src\\main\\resources\\ArrowBright.png")), null, null, null,
+                        new BackgroundSize(100 ,50, true, true, true, true))));
+            } catch (FileNotFoundException ex) {
+                throw new RuntimeException(ex);
+            }
+		});
+
+		upButton.setOnMouseExited(e -> {
+			try {
+				upButton.setBackground(new Background(new BackgroundImage(new Image(new FileInputStream("src\\main\\resources\\ArrowDim.png")), null, null, null,
+						new BackgroundSize(100 ,50, true, true, true, true))));
+			} catch (FileNotFoundException ex) {
+				throw new RuntimeException(ex);
+			}
+		});
+
+		upButtonBox = new HBox(upButton);
+		upButtonBox.setPrefWidth(600);
+		upButtonBox.setPrefHeight(50);
+		upButtonBox.setAlignment(Pos.TOP_CENTER);
+		upButtonBox.setLayoutX(0);
+		upButtonBox.setLayoutY(850);
+
+		todayObjects.getChildren().add(upButtonBox);
+
+	}
+
+	private void makeBackground() {
+		Rectangle background = colorRectangle("#101e63", "#103363");
+		background.setWidth(600);
+		background.setHeight(900);
+
+		forecastObjects.getChildren().add(background);
+	}
+
+
+	/*
+		HBox allContainers;
+	VBox todayBox, tomorrowBox, dayAfterBox;
+
+	Rectangle background;
+	Rectangle todayContainer, tomorrowContainer, dayAfterContainer;
+	ImageView sun1, sun2, sun3, moon1, moon2, moon3;
+	ImageView wind1, wind2, wind3, rain1, rain2, rain3;
+	Text date1, date2, date3;
+	 */
+
+	private void makeBoxes() throws FileNotFoundException {
+
+		// When the time is between 6pm-6am, the Period at index 0 will be overnight and
+		// the daytime reading for today will be lost. This offsets a specific day's day and night reading
+		// in the period arrayList by 1. The code below will account for that:
+		int periodOffset = 0;
+		if(!forecast.get(0).isDaytime) {
+			periodOffset = 1;
+		}
+
+//		Pane testBox = makeForecastDay(0, 1);
+		todayBox = makeForecastDay(0 - periodOffset);
+		todayBox.setPrefWidth(150);
+		todayBox.setPrefHeight(800);
+
+		tomorrowBox = makeForecastDay(2 - periodOffset);
+
+		dayAfterBox = makeForecastDay(4 - periodOffset);
+
+
+
+		allContainers = new HBox(todayBox, tomorrowBox, dayAfterBox);
+		allContainers.setPadding(new Insets(25));
+		allContainers.setSpacing(50);
+		allContainers.setAlignment(Pos.CENTER);
+
+		forecastObjects.getChildren().add(allContainers);
+	}
+
+	private VBox makeForecastDay(int dayInd) throws FileNotFoundException {
+
+		if(dayInd < 0) {
+			dayInd = 0;
+		}
+
+		StackPane dateBox, rainBox, windBox, tempBox;
+
+		//				-= Date =-
+
+		Rectangle dateContainer = new Rectangle(150, 50, Color.WHITE);
+		dateContainer.setOpacity(0.3);
+		dateContainer.setArcHeight(25);
+		dateContainer.setArcWidth(25);
+
+		Text date = new Text(forecast.get(dayInd).name);
+		date.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 30));
+		date.setFill(Color.WHITE);
+
+		if(dayInd == 0) {
+			date.setText("Today");
+		}
+
+		dateBox = new StackPane(dateContainer, date);
+
+		//				-= Rain =-
+
+		Rectangle rainContainer = new Rectangle(150, 150, Color.WHITE);
+		rainContainer.setOpacity(0.3);
+		rainContainer.setArcWidth(25);
+		rainContainer.setArcHeight(25);
+
+		ImageView rainIcon = new ImageView(new Image(new FileInputStream("src\\main\\resources\\rainCloud.png")));
+		rainIcon.setFitWidth(150);
+		rainIcon.setFitHeight(150);
+		rainIcon.setOpacity(0.5);
+
+		Text rainText = new Text(forecast.get(dayInd).probabilityOfPrecipitation.value + "%");
+		rainText.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 50));
+		rainText.setFill(Color.WHITE);
+
+		rainBox = new StackPane(rainContainer, rainIcon, rainText);
+
+		//				-= Wind =-
+
+		Rectangle windContainer = new Rectangle(150, 150, Color.WHITE);
+		windContainer.setOpacity(0.3);
+		windContainer.setArcWidth(25);
+		windContainer.setArcHeight(25);
+
+		ImageView windIcon = new ImageView(new Image(new FileInputStream("src\\main\\resources\\Wind.png")));
+		windIcon.setFitWidth(150);
+		windIcon.setFitHeight(150);
+		windIcon.setOpacity(0.5);
+
+		windBox = new StackPane(windContainer, windIcon);
+
+		//				-= Temperature =-
+
+
+
+		VBox forecastDay = new VBox(dateBox, rainBox, windBox);
+		forecastDay.setPrefWidth(150);
+		forecastDay.setPrefHeight(850);
+		return forecastDay;
+	}
+
+	private VBox makeForecastBackground(int dayInd, int nightInd) {
+		VBox toRet = new VBox();
+
+		return toRet;
+	}
 }
