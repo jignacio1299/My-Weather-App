@@ -20,6 +20,7 @@ import weather.WeatherAPI;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static java.lang.Math.cos;
 import static java.lang.Math.sin;
@@ -131,17 +132,12 @@ public class JavaFX extends Application {
 	HBox allContainers;
 	VBox todayBox, tomorrowBox, dayAfterBox;
 
-	Rectangle background;
-	VBox todayContainer, tomorrowContainer, dayAfterContainer;
-	ImageView sun1, sun2, sun3, moon1, moon2, moon3;
-	ImageView wind1, wind2, wind3, rain1, rain2, rain3;
-	Text date1, date2, date3;
 
 
 	public static void main(String[] args) { launch(args); }
 
 	@Override
-	public void start(Stage primaryStage) throws Exception, FileNotFoundException {
+	public void start(Stage primaryStage) throws Exception {
 
 		//				-= App Init =-
 
@@ -175,8 +171,7 @@ public class JavaFX extends Application {
 
 		makeBackground();
 		makeBoxes();
-
-
+		makeButton2(primaryStage);
 
 
 		//				-= App Display =-
@@ -639,20 +634,16 @@ public class JavaFX extends Application {
 
 	private void makeButton1(Stage primaryStage) throws FileNotFoundException {
 
-
 		upButton = new Button();
 		upButton.setPrefWidth(70);
 		upButton.setPrefHeight(30);
-		upButton.setOpacity(1);
 
 		upButton.setBackground(new Background(new BackgroundImage(new Image(new FileInputStream("src\\main\\resources\\ArrowDim.png")), null, null, null,
 				new BackgroundSize(100 ,50, true, true, true, true))));
 				// No idea how BackgroundSize works, I just made everything true and it worked
 
 		upButton.setOnAction(e -> {
-
 			primaryStage.setScene(forecastScene);
-			System.out.println("Pressed");
 		});
 
 		upButton.setOnMouseEntered(e -> {
@@ -684,25 +675,65 @@ public class JavaFX extends Application {
 
 	}
 
-	private void makeBackground() {
-		Rectangle background = colorRectangle("#101e63", "#103363");
-		background.setWidth(600);
-		background.setHeight(900);
+	private void makeButton2(Stage primaryStage) throws FileNotFoundException {
+		downButton = new Button();
+		downButton.setPrefWidth(70);
+		downButton.setPrefHeight(30);
+		downButton.setRotate(180);
+
+		downButton.setBackground(new Background(new BackgroundImage(new Image(new FileInputStream("src\\main\\resources\\ArrowDim.png")), null, null, null,
+				new BackgroundSize(100 ,50, true, true, true, true))));
+		// No idea how BackgroundSize works, I just made everything true and it worked
+
+		downButton.setOnAction(e -> {
+			primaryStage.setScene(todayScene);
+		});
+
+		downButton.setOnMouseEntered(e -> {
+
+			try {
+				downButton.setBackground(new Background(new BackgroundImage(new Image(new FileInputStream("src\\main\\resources\\ArrowBright.png")), null, null, null,
+						new BackgroundSize(100 ,50, true, true, true, true))));
+			} catch (FileNotFoundException ex) {
+				throw new RuntimeException(ex);
+			}
+		});
+
+		downButton.setOnMouseExited(e -> {
+			try {
+				downButton.setBackground(new Background(new BackgroundImage(new Image(new FileInputStream("src\\main\\resources\\ArrowDim.png")), null, null, null,
+						new BackgroundSize(100 ,50, true, true, true, true))));
+			} catch (FileNotFoundException ex) {
+				throw new RuntimeException(ex);
+			}
+		});
+
+		downButtonBox = new HBox(downButton);
+		downButtonBox.setPrefWidth(600);
+		downButtonBox.setPrefHeight(50);
+		downButtonBox.setAlignment(Pos.TOP_CENTER);
+		downButtonBox.setLayoutX(0);
+		downButtonBox.setLayoutY(10);
+
+		forecastObjects.getChildren().add(downButtonBox);
+	}
+
+	private void makeBackground() throws FileNotFoundException {
+		StackPane background;
+
+		Rectangle color = colorRectangle("#101e63", "#103363");
+		color.setWidth(600);
+		color.setHeight(1100);
+
+		ImageView skyline = new ImageView(new Image(new FileInputStream("src\\main\\resources\\skyline.webp")));
+		skyline.setPreserveRatio(false);
+		skyline.setFitHeight(700);
+
+		background = new StackPane(color, skyline);
+		background.setAlignment(Pos.BOTTOM_CENTER);
 
 		forecastObjects.getChildren().add(background);
 	}
-
-
-	/*
-		HBox allContainers;
-	VBox todayBox, tomorrowBox, dayAfterBox;
-
-	Rectangle background;
-	Rectangle todayContainer, tomorrowContainer, dayAfterContainer;
-	ImageView sun1, sun2, sun3, moon1, moon2, moon3;
-	ImageView wind1, wind2, wind3, rain1, rain2, rain3;
-	Text date1, date2, date3;
-	 */
 
 	private void makeBoxes() throws FileNotFoundException {
 
@@ -714,29 +745,25 @@ public class JavaFX extends Application {
 			periodOffset = 1;
 		}
 
-//		Pane testBox = makeForecastDay(0, 1);
 		todayBox = makeForecastDay(0 - periodOffset);
-		todayBox.setPrefWidth(150);
-		todayBox.setPrefHeight(800);
-
 		tomorrowBox = makeForecastDay(2 - periodOffset);
-
 		dayAfterBox = makeForecastDay(4 - periodOffset);
 
-
-
 		allContainers = new HBox(todayBox, tomorrowBox, dayAfterBox);
-		allContainers.setPadding(new Insets(25));
-		allContainers.setSpacing(50);
+		allContainers.setPadding(new Insets(50, 0, 0, 0));
+		allContainers.setSpacing(40);
 		allContainers.setAlignment(Pos.CENTER);
+		allContainers.setPrefWidth(600);
 
 		forecastObjects.getChildren().add(allContainers);
 	}
 
 	private VBox makeForecastDay(int dayInd) throws FileNotFoundException {
 
+		boolean isOvernight = false;
 		if(dayInd < 0) {
 			dayInd = 0;
+			isOvernight = true;
 		}
 
 		StackPane dateBox, rainBox, windBox, tempBox;
@@ -747,13 +774,21 @@ public class JavaFX extends Application {
 		dateContainer.setOpacity(0.3);
 		dateContainer.setArcHeight(25);
 		dateContainer.setArcWidth(25);
+		dateContainer.setStrokeWidth(5);
+		dateContainer.setStroke(Color.GRAY);
 
 		Text date = new Text(forecast.get(dayInd).name);
-		date.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 30));
+		date.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 25));
 		date.setFill(Color.WHITE);
 
 		if(dayInd == 0) {
-			date.setText("Today");
+			if(isOvernight) {
+				date.setText("Tonight");
+			}
+			else {
+				date.setText("Today");
+			}
+
 		}
 
 		dateBox = new StackPane(dateContainer, date);
@@ -764,15 +799,17 @@ public class JavaFX extends Application {
 		rainContainer.setOpacity(0.3);
 		rainContainer.setArcWidth(25);
 		rainContainer.setArcHeight(25);
+		rainContainer.setStrokeWidth(5);
+		rainContainer.setStroke(Color.GRAY);
 
 		ImageView rainIcon = new ImageView(new Image(new FileInputStream("src\\main\\resources\\rainCloud.png")));
 		rainIcon.setFitWidth(150);
 		rainIcon.setFitHeight(150);
-		rainIcon.setOpacity(0.5);
+		rainIcon.setOpacity(0.75);
 
 		Text rainText = new Text(forecast.get(dayInd).probabilityOfPrecipitation.value + "%");
 		rainText.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 50));
-		rainText.setFill(Color.WHITE);
+		rainText.setFill(Color.web("#262B61"));
 
 		rainBox = new StackPane(rainContainer, rainIcon, rainText);
 
@@ -782,27 +819,104 @@ public class JavaFX extends Application {
 		windContainer.setOpacity(0.3);
 		windContainer.setArcWidth(25);
 		windContainer.setArcHeight(25);
+		windContainer.setStrokeWidth(5);
+		windContainer.setStroke(Color.GRAY);
 
 		ImageView windIcon = new ImageView(new Image(new FileInputStream("src\\main\\resources\\Wind.png")));
 		windIcon.setFitWidth(150);
 		windIcon.setFitHeight(150);
 		windIcon.setOpacity(0.5);
 
-		windBox = new StackPane(windContainer, windIcon);
+		Text windSpeed = new Text(forecast.get(dayInd).windSpeed + "\nDirection: " + forecast.get(dayInd).windDirection);
+		windSpeed.setTextAlignment(TextAlignment.CENTER);
+		windSpeed.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 20));
+		windSpeed.setFill(Color.LIGHTGRAY);
+
+
+		windBox = new StackPane(windContainer, windIcon, windSpeed);
 
 		//				-= Temperature =-
 
+		String dayColor = "#000000";
+		String nightColor;
+		Rectangle tempBG;
+
+		if(isOvernight) {
+			nightColor = tempToColor(forecast.get(dayInd).temperature);
+			tempBG = colorRectangle("#000000", nightColor);
+		}
+		else {
+			dayColor = tempToColor(forecast.get(dayInd).temperature);
+			nightColor = tempToColor(forecast.get(dayInd + 1).temperature);
+
+			tempBG = colorRectangle(dayColor, nightColor);
+
+		}
+		tempBG.setWidth(150);
+		tempBG.setHeight(450);
+
+		Stop[] stops = new Stop[] { new Stop(0, Color.web(dayColor)), new Stop(1, Color.web(nightColor))};
+		LinearGradient lg2 = new LinearGradient(1, 0, 0, 0, true, CycleMethod.NO_CYCLE, stops);
+
+		tempBG.setStroke(lg2);
+		tempBG.setStrokeWidth(5);
+		tempBG.setArcWidth(25);
+		tempBG.setArcHeight(25);
+
+		Text dayTemp = new Text(forecast.get(dayInd).temperature + "°F");
+		dayTemp.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 50));
+		dayTemp.setFill(Color.WHITE);
+
+		ImageView sunIcon = new ImageView(new Image(new FileInputStream("src\\main\\resources\\Sun.png")));
+		sunIcon.setFitWidth(130);
+		sunIcon.setFitHeight(130);
+		sunIcon.setPreserveRatio(true);
+
+		if(isOvernight) {
+			dayTemp.setVisible(false);
+			sunIcon.setVisible(false);
+		}
 
 
-		VBox forecastDay = new VBox(dateBox, rainBox, windBox);
+		ImageView moonIcon = new ImageView(new Image(new FileInputStream("src\\main\\resources\\Moon.png")));
+		moonIcon.setFitWidth(120);
+		moonIcon.setFitHeight(120);
+		moonIcon.setPreserveRatio(true);
+
+		Text nightTemp = new Text(forecast.get(dayInd + 1).temperature + "°F");
+		nightTemp.setFont(Font.font("Tahoma", FontWeight.NORMAL, FontPosture.REGULAR, 50));
+		nightTemp.setFill(Color.WHITE);
+
+		VBox temps = new VBox(dayTemp, sunIcon, moonIcon, nightTemp);
+		temps.setPrefSize(150, 450);
+		temps.setAlignment(Pos.CENTER);
+		temps.setSpacing(10);
+
+		tempBox = new StackPane(tempBG, temps);
+		tempBox.setMinSize(150, 450);
+		tempBox.setAlignment(Pos.TOP_CENTER);
+
+		//				-= Final Box =-
+
+		VBox forecastDay = new VBox(dateBox, rainBox, windBox, tempBox);
 		forecastDay.setPrefWidth(150);
 		forecastDay.setPrefHeight(850);
 		return forecastDay;
 	}
 
-	private VBox makeForecastBackground(int dayInd, int nightInd) {
-		VBox toRet = new VBox();
+	private String tempToColor(int temp) {
+		ArrayList<String> colors = new ArrayList<>(Arrays.asList(
+			"#2D28B0", "#284CB0", "#286EB0", "#2889B0", "#28ABB0",
+			"#28B08C", "#B0A528", "#B09328", "#B06A28", "#B04728"
+		));
 
-		return toRet;
+		int colorsInd = temp / 10;
+		if(colorsInd > 9) { colorsInd = 9; }
+		if(colorsInd < 0) { colorsInd = 0; }
+
+		return colors.get(colorsInd);
+
 	}
+
+
 }
