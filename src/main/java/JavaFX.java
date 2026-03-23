@@ -93,7 +93,6 @@ public class JavaFX extends Application {
 
 	Rectangle statsContainer, tempContainer, windContainer, rainContainer;
 
-	SkyStatus skyStatus;
 	int day = 0;
 
 	HBox descriptionBox = new HBox();
@@ -119,9 +118,7 @@ public class JavaFX extends Application {
 
 
 	Button upButton, downButton;
-	HBox upButtonBox, arrowUpBox;
-	HBox downButtonBox, arrowDownBox;
-	Background upButtonBG, downButtonBG;
+	HBox upButtonBox, downButtonBox;
 
 	//Forecast Scene components
 
@@ -231,10 +228,7 @@ public class JavaFX extends Application {
 
 	private void makeSky(SkyStatus status) throws FileNotFoundException {
 
-//		SkyStatus testStatus = SkyStatus.SNOW;
-		// TODO: COMMENT OUT TEST STATUS
 		switch(status) {
-//		switch(testStatus) {
 			case CLEAR:
 				sky = colorRectangle(SunnySkyTop, SunnySkyBottom);
 				sunHalo = makeView(new Image(new FileInputStream("src\\main\\resources\\SunHalo.png")),
@@ -387,8 +381,6 @@ public class JavaFX extends Application {
 
 		descriptionBox.getChildren().add(shortDesc);
 		todayObjects.getChildren().add(descriptionBox);
-
-//		todayObjects.getChildren().add(shortDesc);
 
 	}
 
@@ -676,6 +668,7 @@ public class JavaFX extends Application {
 	}
 
 	private void makeButton2(Stage primaryStage) throws FileNotFoundException {
+
 		downButton = new Button();
 		downButton.setPrefWidth(70);
 		downButton.setPrefHeight(30);
@@ -719,6 +712,7 @@ public class JavaFX extends Application {
 	}
 
 	private void makeBackground() throws FileNotFoundException {
+
 		StackPane background;
 
 		Rectangle color = colorRectangle("#101e63", "#103363");
@@ -733,6 +727,7 @@ public class JavaFX extends Application {
 		background.setAlignment(Pos.BOTTOM_CENTER);
 
 		forecastObjects.getChildren().add(background);
+
 	}
 
 	private void makeBoxes() throws FileNotFoundException {
